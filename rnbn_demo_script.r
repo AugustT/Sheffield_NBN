@@ -115,6 +115,7 @@ occ <- getOccurrences(tvks = 'NHMSYS0000530674',
                       gridRef = x)
 }
 
+# Note you could parallelise here
 occ_multi_hectad <- sapply(X = c('TL3490', 'TL3590', 'TL3690'),
                            FUN = multi_hectad)
 occ_multi_hectad <- do.call(rbind, occ_multi_hectad)
@@ -198,6 +199,7 @@ hist(as.numeric(format(occ$endDate, '%Y')), breaks = 5)
 
 
 # Use the dataset key you are interested in
+# and specify the years of interest
 system.time({
   occ <- getOccurrences(gridRef = 'SU68',
                         datasets = 'GA001171',
@@ -227,6 +229,7 @@ occ <- getOccurrences(VC = 'Oxfordshire',
                       datasets = 'GA001171',
                       startYear = 2014, 
                       endYear = 2015)
+View(occ)
 
 # Tip: it might be better to loop
 # through grid refs if the data is
@@ -301,15 +304,22 @@ library(parallel)
 library(snowfall)
 
 # Start our (very mini) cluster (I need a new laptop)
+# This uses all your cores
 sfInit(parallel = TRUE, type = 'SOCK', cpus = detectCores())
+
+# Send all our parameters and our function to the cluster
 sfExportAll()
+
+# Send the rnbn package to the cluster
 sfLibrary(rnbn)
 
-# Run
+# Run our 2 hectads in parallel
+# Running in parallel is silent - nothing will appear in your console
 t2 <- system.time({
   s2 <- do.call(rbind, sfClusterApplyLB(shef_hec[1:2], multi_hectad))
 })
 
+# Close the cluster
 sfStop()
 
 # we can test that our results are the same
@@ -334,7 +344,7 @@ t3 <- system.time({
 
 sfStop()
 
-save(shef_data, file = 'shef_data.rdata')
+save(shef_data, file = 'data/shef_data.rdata')
 
 
 
@@ -348,7 +358,7 @@ save(shef_data, file = 'shef_data.rdata')
 rm(list = ls())
 
 # Load our data from the parallel run about
-load(file = 'shef_data.rdata')
+load(file = 'data/shef_data.rdata')
 
 # Google vis
 library(googleVis)
@@ -377,7 +387,7 @@ shef_sum <- as.data.frame(shef_sum)
 # Add an explicit species column
 shef_sum$Species <- row.names(shef_sum)
 
-# Add dummy year column
+# Add dummy year column (needed for the plot I'm going to do)
 shef_sum$Year <- 2000
 
 # Keep species with aleast a few records
@@ -398,7 +408,7 @@ M1 <- gvisMotionChart(data = shef_sum_sub,
 plot(M1)
 
 # Save out the summary data
-save(shef_sum_sub, file = 'dataMotion.rdata')
+save(shef_sum_sub, file = 'data/dataMotion.rdata')
 
 
 
@@ -409,4 +419,4 @@ save(shef_sum_sub, file = 'dataMotion.rdata')
 
 ### shiny app
 
-browseURL('https://tomaugust.shinyapps.io/Sheeffield_rnbn')
+browseURL('https://tomaugust.shinyapps.io/Sheffield_NBN/')
